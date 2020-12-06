@@ -18,71 +18,40 @@ import javafx.application.Application
 
 /** Definition of the JavaFX application.
  */
-class Tile extends StackPane {
-
-	val x : int
-	val y : int
-	val size : int
-	val border: Rectangle
-	new (x : int, y : int, size : int) {
-		this.x = x
-		this.y = y
-		this.size = size
-		this.border = new Rectangle(size - 2, size - 2)
-		this.border.setStroke(Color.BLACK)
-//		this.border.strokeWidth = 5
-		this.children.add(border)
-		this.setTranslateX(x * size)
-		this.setTranslateY(y * size)
-	}
-
-}
 
 
 class MyAppFxApplication extends FxApplication {
-
-	val TILE_SIZE = 40/2
-	val W = 800
-	val H = 800
-	val X_TILES = W / TILE_SIZE
-	val Y_TILES = H / TILE_SIZE
-	var grid: Tile[][] = newArrayOfSize(X_TILES, Y_TILES)
 	
 	def putGridTile(x: int, y: int) : int {
 //		var tile: Tile = this.grid.get(x, y)
 		x + y
 	}
 
-	def doApplicationStart(stage : Stage) :FXMLLoader {
-		println(X_TILES + " x " + Y_TILES + " = " + X_TILES * Y_TILES)
+	def doApplicationStart(stage : Stage) : FXMLLoader {
+		// Retrieve the property bundle that contains the UI texts.
+		var simpleName = typeof(MyAppFxApplication).simpleName
+		val bundle = ResourceBundle::getBundle(typeof(MyAppFxApplication).package.name.replaceAll("\\.", "/") + "/"
+			+ simpleName)
 
-		var root = new Pane();
-		root.setPrefSize(W, H)
+		// Retrieve the JavaFX UI definition file
+		var location = class.getResource(simpleName + ".fxml")
+		
+		// Load the JavaFX UI definition
+		var loader = new FXMLLoader
+		loader.location = location
+		loader.builderFactory = new JavaFXBuilderFactory
+		loader.resources = bundle
+		var root : Parent = loader.load(location.openStream)
+
+		// Create the application UI
 		var scene = new Scene(root)
-		scene.fill = Color.GRAY
-		
-		for (var x = 0; x < X_TILES; x++) {
-			for (var y = 0; y < Y_TILES; y++) {
-				var tile = new Tile(x, y, TILE_SIZE)
-				grid.set(x, y, tile)
-				root.getChildren().add(tile)
-			}
-		}
-		
-		
-		stage.title = "hello"
+		scene.stylesheets.add(class.getResource("ViewerController.css").toExternalForm)
+		stage.title = bundle.getString("TITLE")
 		stage.scene = scene
 		stage.centerOnScreen
-		stage.show()
-		var loader = new FXMLLoader()
-		loader.setController(new MyAppFxViewerController())
-		(loader.getController() as MyAppFxViewerController).initialize()
-
 
 		return loader
 	}
-	
-	
 	
 }
 

@@ -4,9 +4,11 @@ import io.sarl.core.Behaviors
 import io.sarl.core.ExternalContextAccess
 import io.sarl.core.Initialize
 import io.sarl.javafx.FXBehavior
-import io.sarl.javafx.FxViewerController
 import io.sarl.template.javafx.ui.Refresh
 import io.sarl.core.Logging
+import javafx.geometry.Point2D
+
+import io.sarl.template.javafx.ui.MyAppFxViewerController
 
 /*
  * The main agent able to communicate with the GUI
@@ -16,13 +18,17 @@ agent MyAgent {
 	uses Behaviors, Logging, ExternalContextAccess
 
 	var javafxBehavior : FXBehavior
+	
+	var position : Point2D
 
 	on Initialize {
 		info("agent initialized")
 		// The first argument within the initialization event is the JavaFX controller.
 		// It is not recommended to keep alive a reference to the controller, i.e.
 		// the JavaFX controller should not be stored within a field.
-		var fxcontroller = occurrence.parameters.get(0) as FxViewerController
+		var fxcontroller = occurrence.parameters.get(0) as MyAppFxViewerController
+		position = new Point2D(5,5)
+		fxcontroller.addCell(this.position)
 		
 		// The agent learns how to use the UI with a new behavior.
 		// This new behavior needs to have a reference to the JavaFX controller

@@ -5,22 +5,139 @@ import io.sarl.template.javafx.agents.MyAgent
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javafx.fxml.FXML
+import javafx.scene.layout.GridPane
+import javafx.scene.shape.Rectangle
+import javafx.scene.paint.Color
+import javafx.scene.layout.Pane
+
+import javafx.scene.layout.StackPane
+import javafx.^event.EventHandler
+import javafx.scene.input.MouseEvent
+import java.util.ArrayList
+import javafx.geometry.Point2D
+
 
 /** JavaFX controller for the JavaFX application.
  */
+class Tile extends StackPane {
+
+	val rec : Rectangle
+	var activated : boolean
+	
+	new (width : int) {
+		rec = new Rectangle()
+		activated = false
+		
+		rec.width = width
+		rec.height = width
+		rec.fill = null
+		this.rec.stroke = Color.BLACK
+			
+		this.children.add(rec)
+	}
+	
+	def getY() {
+		return this.rec.y
+	}
+	
+	def getX : double {
+		return rec.x
+	}
+
+	def setActivated(b : boolean) {
+		this.activated = b
+		if(activated) this.rec.fill = Color.BLACK
+	}
+
+	def getRec() : Rectangle {
+		return this.rec
+	}
+
+}
+
 class MyAppFxViewerController extends FxViewerController {
 	
-	
+	val TILE_AMOUNT = 50
+	val WIDTH = 700
+	val TILE_WIDTH = WIDTH / TILE_AMOUNT
+
+	var cells : ArrayList<Point2D> = new ArrayList()
 	
 	val launched = new AtomicBoolean(false)
 
 	var launchedAgent : UUID
+	
+	@FXML
+	public var Grid : GridPane
+
+	@FXML
+	public var mainPane : Pane
+
+ 
+	def createGrid() {
+		
+		for(i:0 ..<cells.length){
+			
+		}
+		for (x : 0 ..< TILE_AMOUNT) {
+	        for (y : 0 ..< TILE_AMOUNT) {
+				var tile = new Tile(TILE_WIDTH)
+				Grid.add(tile, x, y)	
+	        }
+	    }
+	}
+	
+	//we can not change a tile of the GridPane by using x, y
+	//we have to get the tile number first
+	def getGridNum(x : int, y : int) {
+		return TILE_AMOUNT * x + y
+	}
+	
+	def showCells() {
+		for (i : 0 ..< cells.length) {
+			var x = cells.get(i).x as int
+			var y = cells.get(i).y as int
+			
+			var t = Grid.getChildren().get(getGridNum(x, y)) as Tile
+			t.activated = true
+		}
+	}
+	
+	def addCell(p : Point2D){
+		this.cells.add(p)
+	}
 
 	/** UI initialization. The agent framework is started.
 	 */
-
 	def initialize {
 		println("initialize controller")
+		
+		mainPane.prefHeight = WIDTH + TILE_AMOUNT
+		mainPane.prefWidth = WIDTH + TILE_AMOUNT
+		
+		createGrid()
+		showCells()
+
+		mainPane.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			def handle(me : MouseEvent) : void {
+				var posX : double = me.getX()
+				var posY : double = me.getY()
+
+				var colX : int = (posX / TILE_WIDTH) as int
+				var colY : int = (posY / TILE_WIDTH) as int
+
+				var tile = Grid.getChildren().get(getGridNum(colX, colY)) as Tile
+
+				if (tile.getRec().fill == Color.BLACK) {
+					tile.getRec().fill = null
+				} else {
+					tile.getRec().fill = Color.BLACK
+				}
+
+			}
+		})
+		
 		// Launching of the agent-side of the application
 		if (!this.launched.getAndSet(true)) {
 			// First launch => start the agent framework with an agent of type MyAgent and the computed id.
@@ -30,10 +147,12 @@ class MyAppFxViewerController extends FxViewerController {
 				
 			]
 		}
+		
+
 	}
 
 	protected def refreshScreen {
-		
+		showCells()
 		// TODO: Refresh the JavaFX screen
 	}
 
