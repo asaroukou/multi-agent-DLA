@@ -9,34 +9,102 @@ import io.sarl.core.Logging
 import javafx.geometry.Point2D
 
 import io.sarl.template.javafx.ui.MyAppFxViewerController
+import io.sarl.core.Lifecycle
+import io.sarl.core.DefaultContextInteractions
+import io.sarl.template.javafx.ui.EndWalk
+import io.sarl.template.javafx.ui.StartWalk
+import io.sarl.core.Schedules
 
 /*
  * The main agent able to communicate with the GUI
  */
 agent MyAgent {
 
-	uses Behaviors, Logging, ExternalContextAccess
+	uses Behaviors, Logging, ExternalContextAccess, Lifecycle, DefaultContextInteractions, Schedules
 
 	var javafxBehavior : FXBehavior
 	
 	var position : Point2D
-
+	var fxcontroller : MyAppFxViewerController
+	
 	on Initialize {
 		info("agent initialized")
 		// The first argument within the initialization event is the JavaFX controller.
 		// It is not recommended to keep alive a reference to the controller, i.e.
 		// the JavaFX controller should not be stored within a field.
-		var fxcontroller = occurrence.parameters.get(0) as MyAppFxViewerController
-		position = new Point2D(5,5)
-		fxcontroller.addCell(this.position)
+		fxcontroller = occurrence.parameters.get(0) as MyAppFxViewerController
+//		position = new Point2D(5,5)
+//		fxcontroller.addCell(this.position)
 		
 		// The agent learns how to use the UI with a new behavior.
 		// This new behavior needs to have a reference to the JavaFX controller
 		this.javafxBehavior = new FXBehavior(this, fxcontroller)
 		this.javafxBehavior.registerBehavior
 		
-		// Query the UI to refresh itself
-		javafxBehavior.UISpace.emit(new Refresh)
+//		// Query the UI to refresh itself
+//		javafxBehavior.UISpace.emit(new Refresh)
+		
+		info("waiting for spawn")
+		task("go").in(5000) [
+
+			info("start spawn")
+			for (i : 0 .. 40) {
+				spawn(Walker)
+			}	
+			task("go").cancel()
+
+			info("start stop")
+		]
+		
+		task("refesh_ui").every(100) [
+			javafxBehavior.UISpace.emit(new Refresh)
+		]
+		
+		
+		
+		
+	}
+	
+	on EndWalk {
+//		info('en walk request')
+		this.fxcontroller.addCell(occurrence.source.UUID.toString(), occurrence.position)
+//		javafxBehavior.UISpace.emit(new Refresh)
 	}
 
 }
+
+agent Walker {
+	uses DefaultContextInteractions, Schedules
+	var position : Point2D
+	var stuck : boolean
+	
+	def walk(){
+		info("walking...")
+		info(this.position)
+		var xWalk = Math.random() > 0.5 ? -1 : 1
+		var yWalk = Math.random() > 0.5 ? -1 : 1
+		this.position = this.position.add(xWalk, yWalk)
+		info(this.position)
+		emit(new EndWalk(position, stuck))
+		
+	}
+
+	uses Behaviors, Logging
+	on Initialize {
+		var x = (Math.random() * 75) % 75 as int
+		var y = (Math.random() * 75) % 75 as int
+		
+		position = new Point2D(x, y)
+		task("walk").every(1000) [
+			walk()	
+		]
+	}
+	
+//	on StartWalk {
+//		info("new start request")
+//		walk()
+//	}
+	
+}
+
+

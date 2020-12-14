@@ -15,7 +15,7 @@ import javafx.^event.EventHandler
 import javafx.scene.input.MouseEvent
 import java.util.ArrayList
 import javafx.geometry.Point2D
-
+import java.util.HashMap
 
 /** JavaFX controller for the JavaFX application.
  */
@@ -32,7 +32,7 @@ class Tile extends StackPane {
 		rec.height = width
 		rec.fill = null
 		this.rec.stroke = Color.BLACK
-			
+		this.rec.strokeWidth = 0.1
 		this.children.add(rec)
 	}
 	
@@ -46,7 +46,7 @@ class Tile extends StackPane {
 
 	def setActivated(b : boolean) {
 		this.activated = b
-		if(activated) this.rec.fill = Color.BLACK
+		activated ? this.rec.fill = Color.BLACK : this.rec.fill = Color.WHITE
 	}
 
 	def getRec() : Rectangle {
@@ -57,11 +57,11 @@ class Tile extends StackPane {
 
 class MyAppFxViewerController extends FxViewerController {
 	
-	val TILE_AMOUNT = 50
-	val WIDTH = 700
+	val TILE_AMOUNT = 75
+	val WIDTH = 750
 	val TILE_WIDTH = WIDTH / TILE_AMOUNT
 
-	var cells : ArrayList<Point2D> = new ArrayList()
+	var cells : HashMap<String, Point2D> = new HashMap<String, Point2D>()
 	
 	val launched = new AtomicBoolean(false)
 
@@ -75,10 +75,6 @@ class MyAppFxViewerController extends FxViewerController {
 
  
 	def createGrid() {
-		
-		for(i:0 ..<cells.length){
-			
-		}
 		for (x : 0 ..< TILE_AMOUNT) {
 	        for (y : 0 ..< TILE_AMOUNT) {
 				var tile = new Tile(TILE_WIDTH)
@@ -94,17 +90,41 @@ class MyAppFxViewerController extends FxViewerController {
 	}
 	
 	def showCells() {
-		for (i : 0 ..< cells.length) {
-			var x = cells.get(i).x as int
-			var y = cells.get(i).y as int
-			
-			var t = Grid.getChildren().get(getGridNum(x, y)) as Tile
-			t.activated = true
-		}
+		for (x : 0 ..< TILE_AMOUNT) {
+			for (y : 0 ..< TILE_AMOUNT) {
+				var t = Grid.getChildren().get(getGridNum(x, y)) as Tile
+				t.activated = false
+			}
+	    }
+		cells.forEach [ uuid, position |
+			var x = (position.x as int) % TILE_AMOUNT
+			var y = (position.y as int) % TILE_AMOUNT
+			if (x < 0) {
+				x = TILE_AMOUNT - 1
+			} else if (x >= TILE_AMOUNT) {
+				x = 0
+			}
+
+			if (y < 0) {
+				y = TILE_AMOUNT - 1
+			} else if (y >= TILE_AMOUNT) {
+				y = 0
+			}
+			try {
+				var t = Grid.getChildren().get(getGridNum(x, y)) as Tile
+				t.activated = true
+			} catch (e:Exception){
+				println("#######error########")
+				println(x+", "+y)
+				println(Grid.getChildren().length)
+				println(getGridNum(x, y))
+			}
+		]
+		println("hash size:" + cells.size())
 	}
 	
-	def addCell(p : Point2D){
-		this.cells.add(p)
+	def addCell(uuid: String, p : Point2D){
+		this.cells.put(uuid, p)
 	}
 
 	/** UI initialization. The agent framework is started.

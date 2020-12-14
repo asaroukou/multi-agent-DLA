@@ -1,5 +1,19 @@
 package io.sarl.template.javafx.ui
 
+import javafx.geometry.Point2D
+
 /** Request for refreshing the JavaFX screen.
  */
 event Refresh
+
+event StartWalk
+
+event EndWalk {
+	var position : Point2D
+	var stuck : boolean
+	new (position : Point2D, stuck : boolean) {
+		this.position = position
+		this.stuck = stuck
+	}
+}
+
