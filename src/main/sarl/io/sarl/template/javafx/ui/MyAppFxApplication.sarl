@@ -15,6 +15,9 @@ import javafx.scene.paint.Color
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
 import javafx.application.Application
+import javafx.scene.control.SplitPane
+import javafx.scene.layout.VBox
+import javafx.scene.control.Label
 
 /** Definition of the JavaFX application.
  */
@@ -44,12 +47,15 @@ class MyAppFxApplication extends FxApplication {
 		var root : Parent = loader.load(location.openStream)
 
 		// Create the application UI
+		var splitPane : SplitPane = new SplitPane()
+		var leftControl : VBox = new VBox(new Label("Left Control"))
+		var midControl : VBox = new VBox(new Label("Mid Control"))
+		var rightControl : VBox = new VBox(new Label("Right Control"))
 		var scene = new Scene(root)
-		scene.stylesheets.add(class.getResource("ViewerController.css").toExternalForm)
+		//		scene.stylesheets.add(class.getResource("ViewerController.css").toExternalForm)
 		stage.title = bundle.getString("TITLE")
 		stage.scene = scene
 		stage.centerOnScreen
-
 		return loader
 	}
 	

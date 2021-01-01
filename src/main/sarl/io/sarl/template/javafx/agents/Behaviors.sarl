@@ -1,0 +1,7 @@
+package io.sarl.template.javafx.agents
+
+behavior GridPositionCompute {
+	def getGridNum(x : int, y : int, tileAmount : int) {
+		return tileAmount * x + y
+	}
+}

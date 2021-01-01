@@ -1,6 +1,7 @@
 package io.sarl.template.javafx.ui
 
 import javafx.geometry.Point2D
+import java.util.HashMap
 
 /** Request for refreshing the JavaFX screen.
  */
@@ -9,11 +10,28 @@ event Refresh
 event StartWalk
 
 event EndWalk {
-	var position : Point2D
+	var oldPosition : Point2D
+	var newPosition : Point2D
 	var stuck : boolean
-	new (position : Point2D, stuck : boolean) {
-		this.position = position
+	new (oldPosition : Point2D, newPosition : Point2D, stuck : boolean) {
+		this.oldPosition = oldPosition
+		this.newPosition = newPosition
 		this.stuck = stuck
 	}
 }
+
+event AskPercept {
+	var position : Point2D
+	new (position : Point2D) {
+		this.position = position
+	}
+}
+
+event ReplyPercept {
+	var positions : HashMap<Point2D, Integer>
+	new (positions : HashMap<Point2D, Integer>) {
+		this.positions = positions
+	}
+}
+
 
