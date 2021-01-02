@@ -2,8 +2,55 @@
 
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.*?>
 
-<Pane fx:id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800" prefWidth="800" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.sarl.template.javafx.ui.MyAppFxViewerController">
-<GridPane id="Grid" fx:id="Grid" prefHeight="800" prefWidth="800">
-</GridPane>
-</Pane>
+<SplitPane
+	xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1"
+	maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+	fx:controller="io.sarl.template.javafx.ui.MyAppFxViewerController" id="mainPane"
+	>
+
+<VBox id="setupBox" fx:id="setupBox" prefHeight="800" prefWidth="200" spacing="15">
+		<children>
+			<HBox spacing="5">
+				<Label> Grid size: </Label>
+				<TextField fx:id="gridSizeText" />
+			</HBox>
+			<HBox>
+				<Label>Stuck cell color size: </Label>
+				<ColorPicker fx:id="stuckCellColorWidget"/>
+			</HBox>
+			<HBox>
+				<Label> Active cell color size: </Label>
+				<ColorPicker fx:id="activeCellColorWidget"/>
+			</HBox>
+			<HBox>
+				<Label> Dead cell color size: </Label>
+				<ColorPicker fx:id="deadCellColorWidget"/>
+			</HBox>
+			
+			<HBox>
+				<Label>Grid stroke color: </Label>
+				<ColorPicker fx:id="strokeColorWidget"/>
+			</HBox>
+			<HBox>
+				<CheckBox fx:id="showGridStroke">Show grid stroke</CheckBox>
+			</HBox>
+			
+			<HBox alignment="CENTER">
+				<Button fx:id="runBtn" text="Run simulation" disable="true"/>
+			</HBox>
+			
+		</children>
+	</VBox>
+	<VBox id="gridBox" fx:id="gridBox">
+		<GridPane id="grid" fx:id="grid">
+		</GridPane>
+	</VBox>
+</SplitPane>
+
+

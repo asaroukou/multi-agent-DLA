@@ -24,6 +24,8 @@ import io.sarl.template.javafx.ui.PointWalker2D
 import io.sarl.core.AgentKilled
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import io.sarl.template.javafx.ui.RunSimulation
+import io.sarl.template.javafx.ui.Ready
 
 /*
  * The main agent able to communicate with the GUI
@@ -32,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger
 	agent MyAgent {
 
 	uses Behaviors, Logging, ExternalContextAccess, Lifecycle, DefaultContextInteractions, Schedules
-	var envSize = new Integer(110)
+	var envSize : Integer
 	var javafxBehavior : FXBehavior
 	var fxcontroller : MyAppFxViewerController
 	var walkerState : AtomicInteger[][]
@@ -99,14 +101,6 @@ import java.util.concurrent.atomic.AtomicInteger
 	
 	on Initialize {
 		info("agent initialized")
-		this.walkerState = newArrayOfSize(this.envSize, this.envSize)
-
-		for (x : 0 ..< envSize) {
-			for (y : 0 ..< envSize) {
-				this.walkerState.set(x, y, new AtomicInteger(0))
-			}
-		}
-		
 		fxcontroller = occurrence.parameters.get(0) as MyAppFxViewerController
 		
 		// The agent learns how to use the UI with a new behavior.
@@ -117,34 +111,40 @@ import java.util.concurrent.atomic.AtomicInteger
 		this.perceptDirectionBehavior = new PerceptDirection(this)
 		this.perceptDirectionBehavior.registerBehavior
 		// Query the UI to refresh itself
-		// javafxBehavior.UISpace.emit(new Refresh)
+		javafxBehavior.UISpace.emit(new Ready)
+	}
+	
+	
 		
-		
-		task("go").in(4000) [
- 		info("start spawn")
+	on RunSimulation {
+		this.envSize = occurrence.envSize as Integer
+		info("envsize: "+ envSize)
+		this.walkerState = newArrayOfSize(this.envSize, this.envSize)
+		for (x : 0 ..< envSize) {
+			for (y : 0 ..< envSize) {
+				this.walkerState.set(x, y, new AtomicInteger(0))
+			}
+		}
+		task("refesh_ui").every(3000) [
+			javafxBehavior.UISpace.emit(new Refresh)
+		]
+		in(50) [
+			info("start spawn")
 
-
-//			this.drawBottomSide(envSize)
-//			this.drawTopSide(envSize)
-//			this.drawLeftSide(envSize)
-//			this.drawRightSide(envSize)
-//			this.drawLeftTopRightBottom(envSize)
-//			this.drawRightTopLeftBottom(envSize)
+			// this.drawBottomSide(envSize)
+			// this.drawTopSide(envSize)
+			// this.drawLeftSide(envSize)
+			// this.drawRightSide(envSize)
+			// this.drawLeftTopRightBottom(envSize)
+			// this.drawRightTopLeftBottom(envSize)
 			this.drawCenter(envSize)
-			for (i : 0 ..<600) {
+			for (i : 0 ..< 1000) {
 				spawn(Walker, null, false, envSize, this.ID)
-			}	
+			}
 			task("go").cancel()
 			info("stop spwan")
 		]
-//		
-		task("refesh_ui").every(400) [
-			javafxBehavior.UISpace.emit(new Refresh)
-		]
-		
-
 	}
-		
 	on EndWalk {
 		var x = occurrence.oldPosition.getX() as int
 		var y = occurrence.oldPosition.getY() as int
@@ -237,7 +237,7 @@ agent Walker {
 			}
 		]
 		if (!this.stuck) {
-			in(50) [
+			in(150) [
 				this.walk(occurrence.positions)
 			]
 		} else {

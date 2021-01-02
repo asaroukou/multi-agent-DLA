@@ -2,6 +2,7 @@ package io.sarl.template.javafx.ui;
 
 import io.sarl.javafx.FxViewerController
 import io.sarl.template.javafx.agents.MyAgent
+import io.sarl.template.javafx.UI.*
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javafx.fxml.FXML
@@ -16,6 +17,15 @@ import javafx.scene.input.MouseEvent
 import java.util.ArrayList
 import javafx.geometry.Point2D
 import java.util.HashMap
+import javafx.scene.layout.VBox
+import javafx.scene.control.SplitPane
+import javafx.scene.control.TextField
+import javafx.scene.control.ColorPicker
+import javafx.scene.control.TextFormatter
+import javafx.util.converter.IntegerStringConverter
+import javafx.scene.control.Button
+import javafx.geometry.Insets
+import javafx.scene.control.CheckBox
 
 /** JavaFX controller for the JavaFX application.
  */
@@ -24,15 +34,17 @@ class Tile extends StackPane {
 	val rec : Rectangle
 	var activated : boolean
 	
-	new (width : int) {
+	new (width : int, stokeColor : Color, showStroke : boolean) {
 		rec = new Rectangle()
 		activated = false
 		
 		rec.width = width
 		rec.height = width
 		rec.fill = null
-		this.rec.stroke = Color.web("#C9C9C9")
-		this.rec.strokeWidth = 0.1
+		if (showStroke) {
+			this.rec.stroke = stokeColor
+			this.rec.strokeWidth = 0.1	
+		}
 		this.children.add(rec)
 	}
 	
@@ -87,28 +99,63 @@ class PointWalker2D {
 
 class MyAppFxViewerController extends FxViewerController {
 	
-	val TILE_AMOUNT = 110
+	var TILE_AMOUNT : int
 	val WIDTH = 830
-	val TILE_WIDTH = WIDTH / TILE_AMOUNT
+	var TILE_WIDTH : int
 
+	var gridStokeColor : Color
+	var activeCellColor : Color
+	var deadCellColor : Color
+	var stuckCellColor : Color
+	var showGrid: boolean
+	
 	var cells : HashMap<String, PointWalker2D> = new HashMap<String, PointWalker2D>()
 	
 	val launched = new AtomicBoolean(false)
 
 	var launchedAgent : UUID
-	
-	@FXML
-	public var Grid : GridPane
 
 	@FXML
-	public var mainPane : Pane
+	public var mainPane : SplitPane
+	
+	@FXML
+	public var grid : GridPane
+
+	@FXML
+	public var setupBox : VBox
+
+	@FXML
+	public var gridBox : VBox
+
+	@FXML
+	public var gridSizeText : TextField
+
+	@FXML
+	public var strokeColorWidget : ColorPicker
+
+	@FXML
+	public var stuckCellColorWidget : ColorPicker
+
+	@FXML
+	public var deadCellColorWidget : ColorPicker
+
+	@FXML
+	public var activeCellColorWidget : ColorPicker
+
+	@FXML
+	public var runBtn : Button
+	
+	@FXML
+	public var showGridStroke: CheckBox
+	
 
  
 	def createGrid() {
+		TILE_WIDTH = WIDTH / TILE_AMOUNT
 		for (x : 0 ..< TILE_AMOUNT) {
 	        for (y : 0 ..< TILE_AMOUNT) {
-				var tile = new Tile(TILE_WIDTH)
-				Grid.add(tile, x, y)	
+				var tile = new Tile(TILE_WIDTH, gridStokeColor, showGrid)
+				grid.add(tile, x, y)	
 	        }
 	    }
 	}
@@ -120,9 +167,9 @@ class MyAppFxViewerController extends FxViewerController {
 	def showCells() {
 		for (x : 0 ..< TILE_AMOUNT) {
 			for (y : 0 ..< TILE_AMOUNT) {
-				var t = Grid.getChildren().get(getGridNum(x, y)) as Tile
+				var t = grid.getChildren().get(getGridNum(x, y)) as Tile
 				t.activated = false
-				t.color = Color.WHITE
+				t.color = deadCellColor
 			}
 	    }
 		cells.forEach [ uuid, walkerPoint |
@@ -140,12 +187,12 @@ class MyAppFxViewerController extends FxViewerController {
 				y = 0
 			}
 			try {
-				var t = Grid.getChildren().get(getGridNum(x, y)) as Tile
+				var t = grid.getChildren().get(getGridNum(x, y)) as Tile
 				t.activated = true
 				if (walkerPoint.state === false) {
-					t.color = Color.BLACK
+					t.color = activeCellColor
 				} else {
-					t.color = Color.RED
+					t.color = stuckCellColor
 				}
 			} catch (e:Exception){
 			}
@@ -158,57 +205,95 @@ class MyAppFxViewerController extends FxViewerController {
 
 	/** UI initialization. The agent framework is started.
 	 */
-	def initialize {
-		println("initialize controller")
-		
-		mainPane.prefHeight = WIDTH + TILE_AMOUNT
-		mainPane.prefWidth = WIDTH + TILE_AMOUNT
-		
+	 
+	def computeInitConfiguration() {
+		TILE_AMOUNT = gridSizeText.text as int
+		gridStokeColor = strokeColorWidget.value
+		stuckCellColor = stuckCellColorWidget.value
+		deadCellColor = deadCellColorWidget.value
+		activeCellColor = activeCellColorWidget.value
+		showGrid = showGridStroke.isSelected
+	}
+	def requestRunSimulation() {
+		computeInitConfiguration()
 		createGrid()
 		showCells()
+		emitToAgents(new RunSimulation(TILE_AMOUNT))
+	} 
+	
+	def initialize {
+		setupBox.maxHeight = WIDTH
+		setupBox.prefHeight = WIDTH
+		setupBox.prefWidth = 300
+		setupBox.maxWidth = 300
+		setupBox.minWidth = 300
 
-//		mainPane.setOnMouseClicked(new EventHandler<MouseEvent>() {
-//			@Override
-//			def handle(me : MouseEvent) : void {
-//				var posX : double = me.getX()
-//				var posY : double = me.getY()
-//
-//				var colX : int = (posX / TILE_WIDTH) as int
-//				var colY : int = (posY / TILE_WIDTH) as int
-//
-//				var tile = Grid.getChildren().get(getGridNum(colX, colY)) as Tile
-//
-//				if (tile.getRec().fill == Color.BLACK) {
-//					tile.getRec().fill = null
-//				} else {
-//					tile.getRec().fill = Color.BLACK
-//				}
-//
-//			}
-//		})
+		gridBox.minHeight = WIDTH
+		gridBox.minWidth = WIDTH
+
+		grid.prefHeight = WIDTH
+		grid.prefWidth = WIDTH
+
+		grid.maxHeight = WIDTH
+		grid.maxWidth = WIDTH
+
+		gridBox.maxHeight = WIDTH
+		gridBox.maxWidth = WIDTH
+
+		applyIntegerFormatToField(gridSizeText)
+		gridSizeText.text = "50"
+		
+		strokeColorWidget.value = Color.web("#C9C9C9")
+		strokeColorWidget.customColors.add(Color.TRANSPARENT)
+		
+		stuckCellColorWidget.value = Color.RED
+		stuckCellColorWidget.customColors.add(Color.TRANSPARENT)
+		
+		deadCellColorWidget.value = Color.WHITE
+		deadCellColorWidget.customColors.add(Color.TRANSPARENT)
+		
+		activeCellColorWidget.value = Color.GREY
+		activeCellColorWidget.customColors.add(Color.TRANSPARENT)
+		
+
+		runBtn.onMouseClicked = new EventHandler<MouseEvent>() {
+			def handle(me : MouseEvent) {
+				requestRunSimulation()
+				runBtn.disable = true
+			}
+		}
 		
 		// Launching of the agent-side of the application
 		if (!this.launched.getAndSet(true)) {
 			// First launch => start the agent framework with an agent of type MyAgent and the computed id.
 			val id = UUID::randomUUID
-//			startAgentApplication(typeof(MyAgent), id) [
-//				// TODO: Put any action that must be done after the first agent launching
-//				
-//			]
+			startAgentApplication(typeof(MyAgent), id) [
+				
+			]
 		}
-		
-
 	}
 
 	protected def refreshScreen {
 		showCells()
-		// TODO: Refresh the JavaFX screen
+	}
+
+	protected def onReady{
+		runBtn.disable = false
+//		requestRunSimulation()
 	}
 
 	/** React to any request from the agent refresh the UI.
 	 */
 	dispatch def receiveEvent(^event : Refresh) {
 		refreshScreen
+	}
+
+	dispatch def receiveEvent(^event : Ready) {
+		onReady
+	}
+	
+	def applyIntegerFormatToField(field : TextField) : void {
+    	field.setTextFormatter(new TextFormatter<Integer>((new IntegerStringConverter())));
 	}
 
 }

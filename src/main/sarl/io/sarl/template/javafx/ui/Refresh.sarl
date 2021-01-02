@@ -5,6 +5,15 @@ import java.util.HashMap
 
 /** Request for refreshing the JavaFX screen.
  */
+event RunSimulation {
+	var envSize : Integer
+	new (envSize: Integer) {
+		this.envSize = envSize
+	}
+}
+
+event Ready
+
 event Refresh
 
 event StartWalk
