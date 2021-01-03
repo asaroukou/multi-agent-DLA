@@ -1,0 +1,46 @@
+package fr.utbm.ia54.dla.ui;
+
+import javafx.scene.layout.StackPane
+import javafx.scene.paint.Color
+import javafx.scene.shape.Rectangle
+
+class Tile extends StackPane {
+
+	val rec : Rectangle
+	var activated : boolean
+
+	new (width : int, stokeColor : Color, showStroke : boolean, activated : boolean = false) {
+		rec = new Rectangle()
+		this.activated = activated
+
+		rec.width = width
+		rec.height = width
+		rec.fill = null
+		if (showStroke) {
+			this.rec.stroke = stokeColor
+			this.rec.strokeWidth = 0.1
+		}
+		this.children.add(rec)
+	}
+
+	def getY() {
+		return this.rec.y
+	}
+
+	def getX : double {
+		return rec.x
+	}
+
+	def setActivated(b : boolean) {
+		this.activated = b
+	}
+
+	def setColor(color : Color) {
+		this.rec.fill = color
+	}
+
+	def getRec() : Rectangle {
+		return this.rec
+	}
+
+}

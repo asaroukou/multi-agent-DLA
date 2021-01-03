@@ -1,0 +1,83 @@
+package fr.utbm.ia54.dla.agents
+
+import javafx.geometry.Point2D
+import io.sarl.lang.core.Agent
+
+enum Direction {
+	UP,
+	DOWN,
+	LEFT,
+	RIGHT,
+	UP_LEFT,
+	UP_RIGHT,
+	DOWN_LEFT,
+	DOWN_RIGHT
+}
+
+@SuppressWarnings("potential_field_synchronization_problem")
+behavior Move extends PerceptDirection {
+	var boundarie : int
+
+	new(owner : Agent, boundarie : int) {
+		super(owner)
+		this.boundarie = boundarie
+	}
+
+	def move(position : Point2D, direction : Direction) : Point2D {
+		var displacementPoint : Point2D = directionToPoint(direction)
+		var newPosition = position.add(displacementPoint)
+		if (newPosition.x < 0) {
+			newPosition = new Point2D(boundarie - 1, newPosition.y)
+		}
+		if (newPosition.y < 0) {
+			newPosition = new Point2D(newPosition.x, boundarie - 1)
+		}
+		newPosition = new Point2D(newPosition.x % boundarie, newPosition.y % boundarie)
+		return newPosition
+	}
+
+	def randomMove(position : Point2D) : Point2D {
+		var randDirection = randomDirection()
+		return move(position, randDirection)
+	}
+
+}
+
+behavior PerceptDirection {
+
+	def mapIntToDirection(i : int) : Direction {
+		return Direction.values().get(i)
+	}
+
+	def randomDirection() : Direction {
+		var rand = (Math.random() * (7 + 1)) as int;
+		return mapIntToDirection(rand)
+	}
+
+	def directionToPoint(direction : Direction) : Point2D {
+		var point : Point2D = new Point2D(0, 0)
+		switch direction {
+			case UP: point = point.add(0, -1)
+			case DOWN: point = point.add(0, 1)
+			case LEFT: point = point.add(-1, 0)
+			case RIGHT: point = point.add(1, 0)
+			case UP_LEFT: point = point.add(-1, -1)
+			case UP_RIGHT: point = point.add(1, -1)
+			case DOWN_LEFT: point = point.add(-1, 1)
+			case DOWN_RIGHT: point = point.add(1, 1)
+		}
+		return point
+	}
+
+	def perceptAround(position : Point2D) : Point2D[] {
+		var directions = Direction.values()
+		var positions : Point2D[] = newArrayOfSize(directions.length)
+		var i = 0
+		for (d : directions) {
+			positions.set(i, position.add(directionToPoint(d)))
+			i++
+		}
+		return positions
+	}
+
+}

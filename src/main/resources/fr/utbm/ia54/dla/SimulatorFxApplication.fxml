@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.Text?>
+<?import java.lang.Double?>
+<SplitPane
+	xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1"
+	maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+	fx:controller="fr.utbm.ia54.dla.ui.SimulatorFxViewerController" id="mainPane"
+	>
+
+<VBox id="setupBox" fx:id="setupBox" prefHeight="800" prefWidth="200" spacing="25">
+		<children>
+			<VBox fx:id="simulationInitBox">
+				<HBox>
+					<Label>Grid size: </Label>
+					<TextField fx:id="gridSizeText" />
+				</HBox>
+				<HBox>
+					<Label>Refresh rate (in ms): </Label>
+					<TextField fx:id="refreshRateText" />
+				</HBox>
+				<HBox>
+					<Label>Walking interval (in ms): </Label>
+					<TextField fx:id="walkingRateText" />
+				</HBox>
+				<HBox>
+					<Label>Stuck cell color size: </Label>
+					<ColorPicker fx:id="stuckCellColorWidget"/>
+				</HBox>
+				<HBox>
+					<Label> Active cell color size: </Label>
+					<ColorPicker fx:id="activeCellColorWidget"/>
+				</HBox>
+				<HBox>
+					<Label> Dead cell color size: </Label>
+					<ColorPicker fx:id="deadCellColorWidget"/>
+				</HBox>
+				
+				<HBox>
+					<Label>Grid stroke color: </Label>
+					<ColorPicker fx:id="strokeColorWidget"/>
+				</HBox>
+				<HBox>
+					<CheckBox fx:id="showGridStroke">Show grid stroke</CheckBox>
+				</HBox>
+			</VBox>
+			<HBox HBox.hgrow="ALWAYS">
+				<Group>
+					<Button id="runBtn" fx:id="runBtn" onAction="#runBtnHandler" text="Run simulation" disable="true" prefWidth="240" maxWidth="Infinity"/>
+					<Button id="stopBtn" fx:id="stopBtn" onAction="#stopBtnHandler" text="Stop simulation" disable="true" prefWidth="240" maxWidth="Infinity" visible="false"/>
+				</Group>
+			</HBox>
+			<VBox fx:id="simulationControlsBox" spacing="15" disable="true">
+				<HBox>
+					<Label>Active cells:</Label>
+					<Text fx:id="activeCellTxt">0</Text>
+				</HBox>
+				<HBox>
+					<Label>Stuck cells:</Label>
+					<Text fx:id="stuckCellTxt">0</Text>
+				</HBox>
+				<HBox>
+					<Label>All cells:</Label>
+					<Text fx:id="allCellTxt">0</Text>
+				</HBox>
+				<HBox>
+					<TextField fx:id="agentToSpawnText"/>
+					<Button fx:id="spawnBtn" text="Spawn" onAction="#spawnBtnHandler"/>
+				</HBox>
+			</VBox>
+		</children>
+	</VBox>
+	<VBox id="gridBox" fx:id="gridBox">
+		<GridPane id="grid" fx:id="grid">
+		</GridPane>
+	</VBox>
+</SplitPane>
+
+

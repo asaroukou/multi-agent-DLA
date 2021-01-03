@@ -1,13 +1,13 @@
-package io.sarl.template.javafx
+package fr.utbm.ia54.dla
 
-import io.sarl.template.javafx.ui.MyAppFxApplication
 import javafx.application.Application
+
 /** Launcher for the application.
  */
-class MyAppLauncher {
+class SimulatorLauncher {
 	
 	static def main(args : String*): void {
-		var app = new MyAppFxApplication()
+		var app = new SimulatorFxApplication()
  		Application::launch(app.class)
 	}
 		

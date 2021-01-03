@@ -1,0 +1,225 @@
+package fr.utbm.ia54.dla.agents
+
+import io.sarl.core.Behaviors
+import io.sarl.core.DefaultContextInteractions
+import io.sarl.core.Destroy
+import io.sarl.core.ExternalContextAccess
+import io.sarl.core.Initialize
+import io.sarl.core.Lifecycle
+import io.sarl.core.Logging
+import io.sarl.core.Schedules
+import io.sarl.javafx.FXBehavior
+import fr.utbm.ia54.dla.ui.AskPercept
+import fr.utbm.ia54.dla.ui.EndWalk
+import fr.utbm.ia54.dla.ui.KillWalker
+import fr.utbm.ia54.dla.ui.SimulatorFxViewerController
+import fr.utbm.ia54.dla.ui.PointWalker2D
+import fr.utbm.ia54.dla.ui.Ready
+import fr.utbm.ia54.dla.ui.Refresh
+import fr.utbm.ia54.dla.ui.ReplyPercept
+import fr.utbm.ia54.dla.ui.RunSimulation
+import fr.utbm.ia54.dla.ui.SpawnRequest
+import fr.utbm.ia54.dla.ui.StopSimulation
+import fr.utbm.ia54.dla.ui.StopSimulationAck
+import fr.utbm.ia54.dla.ui.WalkerDie
+import java.util.HashMap
+import java.util.concurrent.atomic.AtomicInteger
+import javafx.geometry.Point2D
+
+/*
+ * The main agent able to communicate with the GUI
+ */
+@SuppressWarnings("potential_field_synchronization_problem")
+agent Environment {
+	uses Behaviors, Logging, ExternalContextAccess, Lifecycle, DefaultContextInteractions, Schedules
+	var envSize : Integer
+	var refreshRate : Integer
+	var walkingRate : Integer
+	var javafxBehavior : FXBehavior
+	var fxcontroller : SimulatorFxViewerController
+	var walkerState : AtomicInteger[][]
+	var stuckCount : AtomicInteger
+	var activeCount : AtomicInteger
+	var perceptDirectionBehavior : PerceptDirection
+	def getGridNum(x : int, y : int, tileAmount : int) {
+		return tileAmount * x + y
+	}
+
+	def drawCircle(startPoint:Point2D) {
+		for (x : 0 ..< envSize) {
+			for (y : 0 ..< envSize) {
+				var endPoint = new Point2D(x, y)
+				var d = startPoint.distance(endPoint)
+				if (d <= 70 && d >= 69) {
+					spawn(Walker, endPoint, true, envSize, this.ID, walkingRate)
+					activeCount.incrementAndGet
+				}
+				if (d < 0) {
+					info("bad")
+				}
+			}
+		}
+	}
+	
+	def drawLeftTopRightBottom(size : int) {
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(x, x), true, size, this.ID, walkingRate)
+			activeCount.incrementAndGet
+		}
+	}
+	
+	def drawRightTopLeftBottom(size : int) {
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(size - x - 1, x), true, size, this.ID, walkingRate)
+			activeCount.incrementAndGet
+		}
+	}
+
+	def drawBottomSide(size: int) {
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(x, size - 1), true, size, this.ID, walkingRate)
+		}
+	}
+
+	def drawTopSide(size : int) {
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(x, 0), true, size, this.ID, walkingRate)
+			activeCount.incrementAndGet
+		}
+	}
+
+	def drawLeftSide(size : int) {
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(0, x), true, size, this.ID, walkingRate)
+			activeCount.incrementAndGet
+		}
+	}
+
+	def drawRightSide(size : int) {
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(size - 1, x), true, size, this.ID, walkingRate)
+			activeCount.incrementAndGet
+		}
+	}
+
+	def drawCenter(size: int) {
+		var startPoint = new Point2D(size/2 as int, size/2 as int)
+		spawn(Walker, startPoint, true, envSize, this.ID, walkingRate)
+		activeCount.incrementAndGet
+	}
+	
+	on Initialize {
+		info("agent initialized")
+		fxcontroller = occurrence.parameters.get(0) as SimulatorFxViewerController
+		// The agent learns how to use the UI with a new behavior.
+		// This new behavior needs to have a reference to the JavaFX controller
+		this.javafxBehavior = new FXBehavior(this, fxcontroller)
+		this.javafxBehavior.registerBehavior
+		
+		this.perceptDirectionBehavior = new PerceptDirection(this)
+		this.perceptDirectionBehavior.registerBehavior
+		// Query the UI to refresh itself
+		javafxBehavior.UISpace.emit(new Ready)
+		stuckCount = new AtomicInteger(0)
+		activeCount = new AtomicInteger(0)
+	}
+	
+	
+		
+	on RunSimulation {
+		this.envSize = occurrence.envSize as Integer
+		this.refreshRate = occurrence.refreshRate as Integer
+		this.walkingRate = occurrence.walkingRate as Integer
+		info("envsize: "+ envSize)
+		this.walkerState = newArrayOfSize(this.envSize, this.envSize)
+		for (x : 0 ..< envSize) {
+			for (y : 0 ..< envSize) {
+				this.walkerState.set(x, y, new AtomicInteger(0))
+			}
+		}
+		task("refesh_ui").every(refreshRate) [
+			javafxBehavior.UISpace.emit(new Refresh)
+		]
+
+		info("start spawn")
+		// this.drawBottomSide(envSize)
+		// this.drawTopSide(envSize)
+		// this.drawLeftSide(envSize)
+		// this.drawRightSide(envSize)
+		// this.drawLeftTopRightBottom(envSize)
+		// this.drawRightTopLeftBottom(envSize)
+		this.drawCenter(envSize)	
+		info("end spwan")
+	}
+	
+	on SpawnRequest {
+		var number = occurrence.number as int
+		for (i : 0 ..< number) {
+			activeCount.incrementAndGet
+			spawn(Walker, null, false, envSize, this.ID, walkingRate)
+		}
+	}
+	
+	on EndWalk {
+		var x = occurrence.oldPosition.getX() as int
+		var y = occurrence.oldPosition.getY() as int
+		this.walkerState.set(x, y, new AtomicInteger(0))
+		x = occurrence.newPosition.getX() as int
+		y = occurrence.newPosition.getY() as int
+
+		if (occurrence.stuck !== true) {
+			if (occurrence.shouldDie) {
+				this.walkerState.set(x, y, new AtomicInteger(0))
+				this.fxcontroller.removeCell(occurrence.source.UUID.toString())
+			} else {
+				this.walkerState.set(x, y, new AtomicInteger(1))
+				this.fxcontroller.addCell(occurrence.source.UUID.toString(),
+					new PointWalker2D(occurrence.newPosition, occurrence.stuck))
+			}
+		} else {
+			this.walkerState.set(x, y, new AtomicInteger(2))
+			this.fxcontroller.addCell(occurrence.source.UUID.toString(),
+				new PointWalker2D(occurrence.newPosition, occurrence.stuck))
+		}
+	}
+
+	on AskPercept {
+		var around : HashMap<Point2D, Integer> = new HashMap<Point2D, Integer>()
+		var positionAround: Point2D[] = perceptDirectionBehavior.perceptAround(occurrence.position)
+		for(p: positionAround) {
+			if (p.x >= 0 && p.x < envSize && p.y >= 0 && p.y < envSize) {
+				var key = this.walkerState.get(p.x as int, p.y as int)
+				around.put(p, key.get())
+			}
+		}
+		emit(new ReplyPercept(around))[it.UUID == occurrence.source.UUID]
+	}
+
+	on WalkerDie {
+		var stuck = occurrence.stuck as boolean
+		if (stuck) {
+			this.fxcontroller.setStuckMetrics(stuckCount.incrementAndGet)
+		}
+		this.fxcontroller.setActiveMetrics(activeCount.decrementAndGet)
+	}
+	
+	on StopSimulation {
+		emit(new KillWalker)
+		task("die").every(500) [
+			if (activeCount.get == 0) {
+				task("die").cancel()
+				killMe
+			}
+		]
+	}
+
+	on Destroy {
+		javafxBehavior.UISpace.emit(new StopSimulationAck)
+		this.javafxBehavior.unregisterBehavior
+		this.perceptDirectionBehavior.unregisterBehavior
+	}
+
+}
+
+
+

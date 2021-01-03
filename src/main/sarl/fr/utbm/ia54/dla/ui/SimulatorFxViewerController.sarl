@@ -1,0 +1,334 @@
+package fr.utbm.ia54.dla.ui;
+
+import io.sarl.javafx.FxViewerController
+import fr.utbm.ia54.dla.agents.Environment
+import java.util.HashMap
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import javafx.^event.ActionEvent
+import javafx.^event.EventHandler
+import javafx.fxml.FXML
+import javafx.scene.control.Button
+import javafx.scene.control.CheckBox
+import javafx.scene.control.ColorPicker
+import javafx.scene.control.SplitPane
+import javafx.scene.control.TextField
+import javafx.scene.control.TextFormatter
+import javafx.scene.input.MouseEvent
+import javafx.scene.layout.GridPane
+import javafx.scene.layout.VBox
+import javafx.scene.paint.Color
+import javafx.scene.text.Text
+import javafx.util.converter.IntegerStringConverter
+
+/** JavaFX controller for the JavaFX application.
+ */
+enum SimulationState {
+	IDDLE,
+	STARTED,
+	STOPED
+}
+class SimulatorFxViewerController extends FxViewerController {
+
+	var simulationState : SimulationState
+
+	var dragX : int
+	var dragY : int
+
+	var allCell : int
+	var activeCell : int
+	var stuckCell : int
+
+	var TILE_AMOUNT : int
+	val WIDTH = 940
+	var TILE_WIDTH : int
+
+	var gridStokeColor : Color
+	var activeCellColor : Color
+	var deadCellColor : Color
+	var stuckCellColor : Color
+	var showGrid : boolean
+	var refreshRate : int
+	var walkingRate : int
+
+	var cells : HashMap<String, PointWalker2D> = new HashMap<String, PointWalker2D>()
+
+	val launched = new AtomicBoolean(false)
+
+	var launchedAgent : UUID
+
+	@FXML public var mainPane : SplitPane
+	@FXML public var grid : GridPane
+	@FXML public var setupBox : VBox
+	@FXML public var gridBox : VBox
+	@FXML public var gridSizeText : TextField
+	@FXML public var refreshRateText : TextField
+	@FXML public var walkingRateText : TextField
+	@FXML public var strokeColorWidget : ColorPicker
+	@FXML public var stuckCellColorWidget : ColorPicker
+	@FXML public var deadCellColorWidget : ColorPicker
+	@FXML public var activeCellColorWidget : ColorPicker
+	@FXML public var showGridStroke : CheckBox
+	@FXML public var simulationControlsBox : VBox
+	@FXML public var agentToSpawnText : TextField
+	@FXML public var activeCellTxt : Text
+	@FXML public var stuckCellTxt : Text
+	@FXML public var allCellTxt : Text
+	@FXML public var runBtn : Button
+	@FXML public var stopBtn : Button
+	@FXML public var spawnBtn : Button
+
+	@SuppressWarnings("unused_private_member")
+	@FXML
+	private def runBtnHandler(e : ActionEvent) : void {
+		e.consume()
+		requestRunSimulation()
+	}
+
+	@SuppressWarnings("unused_private_member")
+	@FXML
+	private def stopBtnHandler(e : ActionEvent) : void {
+		e.consume()
+		requestStopSimulation()
+	}
+
+	@SuppressWarnings("unused_private_member")
+	@FXML
+	private def spawnBtnHandler(e : ActionEvent) : void {
+		e.consume()
+		sendSpawnRequest(Integer.parseInt(agentToSpawnText.text))
+	}
+
+	def createGrid() {
+		TILE_WIDTH = WIDTH / TILE_AMOUNT
+		for (x : 0 ..< TILE_AMOUNT) {
+			for (y : 0 ..< TILE_AMOUNT) {
+				var tile = new Tile(TILE_WIDTH, gridStokeColor, showGrid)
+				grid.add(tile, x, y)
+			}
+		}
+	}
+
+	def getGridNum(x : int, y : int) {
+		return TILE_AMOUNT * x + y
+	}
+
+	def showCells() {
+		for (x : 0 ..< TILE_AMOUNT) {
+			for (y : 0 ..< TILE_AMOUNT) {
+				var t = grid.getChildren().get(getGridNum(x, y)) as Tile
+				t.activated = false
+				t.color = deadCellColor
+			}
+		}
+		cells.forEach [ uuid, walkerPoint |
+			var x = (walkerPoint.position.x as int) % TILE_AMOUNT
+			var y = (walkerPoint.position.y as int) % TILE_AMOUNT
+			if (x < 0) {
+				x = TILE_AMOUNT - 1
+			} else if (x >= TILE_AMOUNT) {
+				x = 0
+			}
+
+			if (y < 0) {
+				y = TILE_AMOUNT - 1
+			} else if (y >= TILE_AMOUNT) {
+				y = 0
+			}
+
+			var t = grid.getChildren().get(getGridNum(x, y)) as Tile
+			t.activated = true
+			if (!walkerPoint.state) {
+				t.color = activeCellColor
+			} else {
+				t.color = stuckCellColor
+			}
+		]
+	}
+
+	def addCell(uuid : String, w : PointWalker2D) {
+		this.cells.put(uuid, w)
+	}
+
+	def removeCell(uuid : String) {
+		this.cells.remove(uuid)
+	}
+
+	def setActiveMetrics() {
+		this.stuckCell
+	}
+
+	def clearUnstuckCell() {
+		var activeCells : HashMap<String, PointWalker2D> = new HashMap<String, PointWalker2D>()
+		cells.forEach [ uuid, walkerPoint |
+			{
+				if (walkerPoint.state === true) {
+					activeCells.put(uuid, walkerPoint)
+				}
+			}
+		]
+		cells = activeCells
+	}
+
+	/** UI initialization. The agent framework is started.
+	 */
+	def computeInitConfiguration() {
+		TILE_AMOUNT = Integer.parseInt(gridSizeText.text)
+		gridStokeColor = strokeColorWidget.value
+		stuckCellColor = stuckCellColorWidget.value
+		deadCellColor = deadCellColorWidget.value
+		activeCellColor = activeCellColorWidget.value
+		showGrid = showGridStroke.isSelected
+		refreshRate = Integer.parseInt(refreshRateText.text)
+		walkingRate = Integer.parseInt(walkingRateText.text)
+		allCell = TILE_AMOUNT * TILE_AMOUNT
+		allCellTxt.text = allCell.toString()
+	}
+
+	def requestRunSimulation() {
+		computeInitConfiguration()
+		createGrid()
+		showCells()
+		emitToAgents(new RunSimulation(TILE_AMOUNT, refreshRate, walkingRate))
+		simulationControlsBox.disable = false
+		simulationControlsBox.visible = true
+		stopBtn.visible = true
+		stopBtn.disable = false
+		runBtn.visible = false
+		runBtn.disable = true
+	}
+
+	def requestStopSimulation() {
+		emitToAgents(new StopSimulation)
+		stopBtn.disable = true
+	}
+
+	def onStopSimulationAck() {
+		stopBtn.visible = false
+		runBtn.visible = true
+		runBtn.disable = false
+		clearUnstuckCell()
+		showCells()
+	}
+
+	def sendSpawnRequest(nbr : int) {
+		emitToAgents(new SpawnRequest(nbr))
+	}
+
+	def limit(number : double, limit : double) {
+		if (number > limit) {
+			return limit
+		} else if (number < -limit) {
+			return -limit
+		} else {
+			return number
+		}
+
+	}
+
+	def initialize {
+		allCell = 0
+		activeCell = 0
+		stuckCell = 0
+		setupBox.maxHeight = WIDTH
+		setupBox.prefHeight = WIDTH
+		setupBox.prefWidth = 400
+		setupBox.maxWidth = 400
+		setupBox.minWidth = 400
+
+		gridBox.minHeight = WIDTH
+		gridBox.minWidth = WIDTH
+
+		grid.prefHeight = WIDTH
+		grid.prefWidth = WIDTH
+
+		grid.maxHeight = WIDTH
+		grid.maxWidth = WIDTH
+
+		gridBox.maxHeight = WIDTH
+		gridBox.maxWidth = WIDTH
+
+		applyIntegerFormatToField(gridSizeText)
+		gridSizeText.text = "50"
+
+		applyIntegerFormatToField(agentToSpawnText)
+		agentToSpawnText.text = "50"
+
+		applyIntegerFormatToField(refreshRateText)
+		refreshRateText.text = "200"
+
+		applyIntegerFormatToField(walkingRateText)
+		walkingRateText.text = "50"
+
+		strokeColorWidget.value = Color.web("#C9C9C9")
+		strokeColorWidget.customColors.add(Color.TRANSPARENT)
+
+		stuckCellColorWidget.value = Color.RED
+		stuckCellColorWidget.customColors.add(Color.TRANSPARENT)
+
+		deadCellColorWidget.value = Color.WHITE
+		deadCellColorWidget.customColors.add(Color.TRANSPARENT)
+
+		activeCellColorWidget.value = Color.GREY
+		activeCellColorWidget.customColors.add(Color.TRANSPARENT)
+
+		grid.onMouseDragged = new EventHandler<MouseEvent>() {
+			def handle(me : MouseEvent) {
+				if (dragX != 0) { // prevent from panning before values are initialized
+					grid.setTranslateX(grid.getTranslateX() + limit(me.getX() - dragX, 10));
+					grid.setTranslateY(grid.getTranslateY() + limit(me.getY() - dragY, 10));
+				}
+				dragX = me.getX() as int;
+				dragY = me.getY() as int;
+			}
+		}
+
+		// Launching of the agent-side of the application
+		if (!this.launched.getAndSet(true)) {
+			// First launch => start the agent framework with an agent of type MyAgent and the computed id.
+			launchedAgent = UUID::randomUUID
+			startAgentApplication(typeof(Environment), launchedAgent)[]
+		}
+	}
+
+	def setStuckMetrics(stuckCell : int) {
+		this.stuckCell = stuckCell
+	}
+
+	def setActiveMetrics(activeCell : int) {
+		this.activeCell = activeCell
+	}
+
+	def updateMetrics() {
+		this.stuckCellTxt.text = stuckCell.toString()
+		this.activeCellTxt.text = activeCell.toString()
+	}
+
+	protected def refreshScreen {
+		showCells()
+		updateMetrics()
+	}
+
+	protected def onReady {
+		runBtn.disable = false
+	}
+
+	/** React to any request from the agent refresh the UI.
+	 */
+	dispatch def receiveEvent(^event : Refresh) {
+		refreshScreen
+	}
+
+	dispatch def receiveEvent(^event : Ready) {
+		onReady
+	}
+
+	dispatch def receiveEvent(^event : StopSimulationAck) {
+		onStopSimulationAck
+	}
+
+	def applyIntegerFormatToField(field : TextField) : void {
+		field.setTextFormatter(new TextFormatter<Integer>((new IntegerStringConverter())));
+	}
+
+}

@@ -1,0 +1,72 @@
+package fr.utbm.ia54.dla.ui
+
+import javafx.geometry.Point2D
+import java.util.HashMap
+
+/** Request for refreshing the JavaFX screen.
+ */
+event Ready
+
+event StartWalk
+
+event SpawnRequest {
+	var number : Integer
+	new (number : Integer) {
+		this.number = number
+	}
+}
+
+event Refresh
+
+event RunSimulation {
+	var envSize : Integer
+	var refreshRate : Integer
+	var walkingRate : Integer
+	new (envSize : Integer, refreshRate : Integer, walkingRate : Integer) {
+		this.envSize = envSize
+		this.refreshRate = refreshRate
+		this.walkingRate = walkingRate
+	}
+}
+
+event StopSimulation
+
+event StopSimulationAck
+
+event KillWalker
+
+event WalkerDie {
+	var stuck : boolean
+	new (stuck : boolean) {
+		this.stuck = stuck
+	}
+}
+
+event EndWalk {
+	val oldPosition : Point2D
+	val newPosition : Point2D
+	val stuck : boolean
+	val shouldDie: boolean
+	new (oldPosition : Point2D, newPosition : Point2D, stuck : boolean, shouldDie : boolean) {
+		this.oldPosition = oldPosition
+		this.newPosition = newPosition
+		this.stuck = stuck
+		this.shouldDie = shouldDie
+	}
+}
+
+event AskPercept {
+	var position : Point2D
+	new (position : Point2D) {
+		this.position = position
+	}
+}
+
+event ReplyPercept {
+	var positions : HashMap<Point2D, Integer>
+	new (positions : HashMap<Point2D, Integer>) {
+		this.positions = positions
+	}
+}
+
+
