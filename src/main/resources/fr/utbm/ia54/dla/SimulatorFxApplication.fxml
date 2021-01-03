@@ -10,6 +10,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.text.Text?>
 <?import java.lang.Double?>
+<?import javafx.geometry.Insets?>
+
 <SplitPane
 	xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1"
 	maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
@@ -18,7 +20,7 @@
 
 <VBox id="setupBox" fx:id="setupBox" prefHeight="800" prefWidth="200" spacing="25">
 		<children>
-			<VBox fx:id="simulationInitBox">
+			<VBox fx:id="simulationInitBox" alignment="CENTER">
 				<HBox>
 					<Label>Grid size: </Label>
 					<TextField fx:id="gridSizeText" />
@@ -50,6 +52,13 @@
 				</HBox>
 				<HBox>
 					<CheckBox fx:id="showGridStroke">Show grid stroke</CheckBox>
+				</HBox>
+				
+				<HBox id="initBox">
+					<Label>Intial configuration: </Label>
+				</HBox>
+				<HBox>
+					<ListView id="initConfListView" fx:id="initConfListView"/>
 				</HBox>
 			</VBox>
 			<HBox HBox.hgrow="ALWAYS">

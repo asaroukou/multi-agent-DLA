@@ -20,6 +20,10 @@ import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
 import javafx.util.converter.IntegerStringConverter
+import javafx.scene.control.ListView
+import javafx.collections.FXCollections
+import javafx.collections.ObservableList
+import javafx.scene.control.SelectionMode
 
 /** JavaFX controller for the JavaFX application.
  */
@@ -28,6 +32,18 @@ enum SimulationState {
 	STARTED,
 	STOPED
 }
+
+enum SimulationInitConfiguration{
+	CENTER,
+	TOP,
+	BOTTOM,
+	LEFT,
+	RIGHT,
+	TOP_LEFT_BOTTOM_RIGHT,
+	TOP_RIGHT_BOTTOM_LEFT,
+	CIRCLE
+}
+
 class SimulatorFxViewerController extends FxViewerController {
 
 	var simulationState : SimulationState
@@ -77,7 +93,8 @@ class SimulatorFxViewerController extends FxViewerController {
 	@FXML public var runBtn : Button
 	@FXML public var stopBtn : Button
 	@FXML public var spawnBtn : Button
-
+	@FXML public var initConfListView: ListView
+	
 	@SuppressWarnings("unused_private_member")
 	@FXML
 	private def runBtnHandler(e : ActionEvent) : void {
@@ -189,7 +206,8 @@ class SimulatorFxViewerController extends FxViewerController {
 		computeInitConfiguration()
 		createGrid()
 		showCells()
-		emitToAgents(new RunSimulation(TILE_AMOUNT, refreshRate, walkingRate))
+		var initConf : ObservableList<Integer> = initConfListView.getSelectionModel().getSelectedIndices()
+		emitToAgents(new RunSimulation(TILE_AMOUNT, refreshRate, walkingRate, initConf))
 		simulationControlsBox.disable = false
 		simulationControlsBox.visible = true
 		stopBtn.visible = true
@@ -227,6 +245,10 @@ class SimulatorFxViewerController extends FxViewerController {
 	}
 
 	def initialize {
+		var items : ObservableList<String> = FXCollections.observableArrayList();
+		SimulationInitConfiguration.values.forEach[el|items.add(el.toString())]
+		initConfListView.items = items
+		initConfListView.selectionModel.selectionMode = SelectionMode.MULTIPLE
 		allCell = 0
 		activeCell = 0
 		stuckCell = 0

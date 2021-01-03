@@ -5,12 +5,8 @@ import javafx.application.Application
 /** Launcher for the application.
  */
 class SimulatorLauncher {
-	
 	static def main(args : String*): void {
 		var app = new SimulatorFxApplication()
  		Application::launch(app.class)
 	}
-		
-	
-
 }

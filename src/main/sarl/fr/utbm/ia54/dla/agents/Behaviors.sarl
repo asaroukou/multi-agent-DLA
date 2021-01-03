@@ -2,6 +2,8 @@ package fr.utbm.ia54.dla.agents
 
 import javafx.geometry.Point2D
 import io.sarl.lang.core.Agent
+import io.sarl.core.Lifecycle
+import java.util.UUID
 
 enum Direction {
 	UP,
@@ -79,5 +81,84 @@ behavior PerceptDirection {
 		}
 		return positions
 	}
+}
 
+behavior InitConfiguration {
+	uses Lifecycle
+	def drawCircle(size : int, parent : UUID, walkingRate: int) {
+		var startPoint = new Point2D(size / 2 as int, size / 2 as int)
+		var r = startPoint.distance(new Point2D(size / 2 as int, 4))
+		var activeCount = 0
+		for (x : 0 ..< size) {
+			for (y : 0 ..< size) {
+				var endPoint = new Point2D(x, y)
+				var d = startPoint.distance(endPoint)
+				if (d <= r + 0.7 && d >= r - 0.7) {
+					spawn(Walker, endPoint, true, size, parent, walkingRate)
+					activeCount++
+				}
+			}
+		}
+		return activeCount
+	}
+
+	def drawTopLeftBottomRight(size : int, parent : UUID, walkingRate : int) {
+		var activeCount = 0
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(x, x), true, size, this.ID, walkingRate)
+			activeCount++
+		}
+		return activeCount
+	}
+
+	def drawTopRightBottomLeft(size : int, parent : UUID, walkingRate : int) {
+		var activeCount = 0
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(size - x - 1, x), true, size, this.ID, walkingRate)
+			activeCount++
+		}
+		return activeCount
+	}
+
+	def drawBottomSide(size : int, parent : UUID, walkingRate : int) {
+		var activeCount = 0
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(x, size - 1), true, size, this.ID, walkingRate)
+			activeCount++
+		}
+		return activeCount
+	}
+
+	def drawTopSide(size : int, parent : UUID, walkingRate : int) {
+		var activeCount = 0
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(x, 0), true, size, parent, walkingRate)
+			activeCount++
+		}
+		return activeCount
+	}
+
+	def drawLeftSide(size : int, parent : UUID, walkingRate : int) {
+		var activeCount = 0
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(0, x), true, size, parent, walkingRate)
+			activeCount++
+		}
+		return activeCount
+	}
+
+	def drawRightSide(size : int, parent : UUID, walkingRate : int) {
+		var activeCount = 0
+		for (x : 0 ..< size) {
+			spawn(Walker, new Point2D(size - 1, x), true, size, parent, walkingRate)
+			activeCount++
+		}
+		return activeCount
+	}
+
+	def drawCenter(size : int, parent : UUID, walkingRate : int) {
+		var startPoint = new Point2D(size / 2 as int, size / 2 as int)
+		spawn(Walker, startPoint, true, size, parent, walkingRate)
+		return 1
+	}
 }

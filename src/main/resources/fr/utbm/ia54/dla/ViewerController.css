@@ -25,7 +25,16 @@
 }
 
 #mainPane #setupBox HBox {
-	-fx-alignment:center;
+	/*-fx-alignment:center;*/
+}
+
+#initConfListView {
+	-fx-max-height: 110;
+	-fx-max-width: 240;
+}
+
+#initBox{
+	-fx-padding: 15 5 5 0;
 }
 
 #mainPane #setupBox HBox TextField,

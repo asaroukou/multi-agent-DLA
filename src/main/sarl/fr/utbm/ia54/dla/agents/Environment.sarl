@@ -25,6 +25,8 @@ import fr.utbm.ia54.dla.ui.WalkerDie
 import java.util.HashMap
 import java.util.concurrent.atomic.AtomicInteger
 import javafx.geometry.Point2D
+import javafx.collections.ObservableList
+import fr.utbm.ia54.dla.ui.SimulationInitConfiguration
 
 /*
  * The main agent able to communicate with the GUI
@@ -41,72 +43,7 @@ agent Environment {
 	var stuckCount : AtomicInteger
 	var activeCount : AtomicInteger
 	var perceptDirectionBehavior : PerceptDirection
-	def getGridNum(x : int, y : int, tileAmount : int) {
-		return tileAmount * x + y
-	}
-
-	def drawCircle(startPoint:Point2D) {
-		for (x : 0 ..< envSize) {
-			for (y : 0 ..< envSize) {
-				var endPoint = new Point2D(x, y)
-				var d = startPoint.distance(endPoint)
-				if (d <= 70 && d >= 69) {
-					spawn(Walker, endPoint, true, envSize, this.ID, walkingRate)
-					activeCount.incrementAndGet
-				}
-				if (d < 0) {
-					info("bad")
-				}
-			}
-		}
-	}
-	
-	def drawLeftTopRightBottom(size : int) {
-		for (x : 0 ..< size) {
-			spawn(Walker, new Point2D(x, x), true, size, this.ID, walkingRate)
-			activeCount.incrementAndGet
-		}
-	}
-	
-	def drawRightTopLeftBottom(size : int) {
-		for (x : 0 ..< size) {
-			spawn(Walker, new Point2D(size - x - 1, x), true, size, this.ID, walkingRate)
-			activeCount.incrementAndGet
-		}
-	}
-
-	def drawBottomSide(size: int) {
-		for (x : 0 ..< size) {
-			spawn(Walker, new Point2D(x, size - 1), true, size, this.ID, walkingRate)
-		}
-	}
-
-	def drawTopSide(size : int) {
-		for (x : 0 ..< size) {
-			spawn(Walker, new Point2D(x, 0), true, size, this.ID, walkingRate)
-			activeCount.incrementAndGet
-		}
-	}
-
-	def drawLeftSide(size : int) {
-		for (x : 0 ..< size) {
-			spawn(Walker, new Point2D(0, x), true, size, this.ID, walkingRate)
-			activeCount.incrementAndGet
-		}
-	}
-
-	def drawRightSide(size : int) {
-		for (x : 0 ..< size) {
-			spawn(Walker, new Point2D(size - 1, x), true, size, this.ID, walkingRate)
-			activeCount.incrementAndGet
-		}
-	}
-
-	def drawCenter(size: int) {
-		var startPoint = new Point2D(size/2 as int, size/2 as int)
-		spawn(Walker, startPoint, true, envSize, this.ID, walkingRate)
-		activeCount.incrementAndGet
-	}
+	var initConfBehavior : InitConfiguration
 	
 	on Initialize {
 		info("agent initialized")
@@ -115,9 +52,12 @@ agent Environment {
 		// This new behavior needs to have a reference to the JavaFX controller
 		this.javafxBehavior = new FXBehavior(this, fxcontroller)
 		this.javafxBehavior.registerBehavior
-		
+
 		this.perceptDirectionBehavior = new PerceptDirection(this)
 		this.perceptDirectionBehavior.registerBehavior
+
+		this.initConfBehavior = new InitConfiguration(this)
+		this.initConfBehavior.registerBehavior
 		// Query the UI to refresh itself
 		javafxBehavior.UISpace.emit(new Ready)
 		stuckCount = new AtomicInteger(0)
@@ -130,7 +70,9 @@ agent Environment {
 		this.envSize = occurrence.envSize as Integer
 		this.refreshRate = occurrence.refreshRate as Integer
 		this.walkingRate = occurrence.walkingRate as Integer
+		var initConf = occurrence.initConf as ObservableList<Integer>
 		info("envsize: "+ envSize)
+		info("conf " + initConf)
 		this.walkerState = newArrayOfSize(this.envSize, this.envSize)
 		for (x : 0 ..< envSize) {
 			for (y : 0 ..< envSize) {
@@ -140,15 +82,29 @@ agent Environment {
 		task("refesh_ui").every(refreshRate) [
 			javafxBehavior.UISpace.emit(new Refresh)
 		]
-
 		info("start spawn")
-		// this.drawBottomSide(envSize)
-		// this.drawTopSide(envSize)
-		// this.drawLeftSide(envSize)
-		// this.drawRightSide(envSize)
-		// this.drawLeftTopRightBottom(envSize)
-		// this.drawRightTopLeftBottom(envSize)
-		this.drawCenter(envSize)	
+		initConf.forEach[index|{
+			var newAgentNbr = 0
+			switch index {
+				case SimulationInitConfiguration.CENTER.ordinal:
+					newAgentNbr = this.initConfBehavior.drawCenter(envSize, this.ID, refreshRate)
+				case SimulationInitConfiguration.TOP.ordinal:
+					newAgentNbr = this.initConfBehavior.drawTopSide(envSize, this.ID, refreshRate)
+				case SimulationInitConfiguration.BOTTOM.ordinal:
+					newAgentNbr = this.initConfBehavior.drawBottomSide(envSize, this.ID, refreshRate)
+				case SimulationInitConfiguration.LEFT.ordinal:
+					newAgentNbr = this.initConfBehavior.drawLeftSide(envSize, this.ID, refreshRate)
+				case SimulationInitConfiguration.RIGHT.ordinal:
+					newAgentNbr = this.initConfBehavior.drawRightSide(envSize, this.ID, refreshRate)
+				case SimulationInitConfiguration.TOP_LEFT_BOTTOM_RIGHT.ordinal:
+					newAgentNbr = this.initConfBehavior.drawTopLeftBottomRight(envSize, this.ID, refreshRate)
+				case SimulationInitConfiguration.TOP_RIGHT_BOTTOM_LEFT.ordinal:
+					newAgentNbr = this.initConfBehavior.drawTopRightBottomLeft(envSize, this.ID, refreshRate)
+				case SimulationInitConfiguration.CIRCLE.ordinal:
+					newAgentNbr = this.initConfBehavior.drawCircle(envSize, this.ID, refreshRate)
+			}
+			activeCount.addAndGet(newAgentNbr)
+		}]
 		info("end spwan")
 	}
 	
@@ -205,6 +161,7 @@ agent Environment {
 	
 	on StopSimulation {
 		emit(new KillWalker)
+		task("refesh_ui").cancel()
 		task("die").every(500) [
 			if (activeCount.get == 0) {
 				task("die").cancel()

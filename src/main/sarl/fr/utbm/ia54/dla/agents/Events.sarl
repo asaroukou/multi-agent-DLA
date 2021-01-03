@@ -2,6 +2,8 @@ package fr.utbm.ia54.dla.ui
 
 import javafx.geometry.Point2D
 import java.util.HashMap
+import java.lang.reflect.Array
+import javafx.collections.ObservableList
 
 /** Request for refreshing the JavaFX screen.
  */
@@ -19,13 +21,15 @@ event SpawnRequest {
 event Refresh
 
 event RunSimulation {
-	var envSize : Integer
-	var refreshRate : Integer
-	var walkingRate : Integer
-	new (envSize : Integer, refreshRate : Integer, walkingRate : Integer) {
+	val envSize : Integer
+	val refreshRate : Integer
+	val walkingRate : Integer
+	val initConf : ObservableList<Integer>
+	new (envSize : Integer, refreshRate : Integer, walkingRate : Integer, initConf : ObservableList<Integer>) {
 		this.envSize = envSize
 		this.refreshRate = refreshRate
 		this.walkingRate = walkingRate
+		this.initConf = initConf
 	}
 }
 
