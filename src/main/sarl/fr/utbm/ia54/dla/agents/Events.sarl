@@ -1,15 +1,12 @@
-package fr.utbm.ia54.dla.ui
+package fr.utbm.ia54.dla.agents
 
-import javafx.geometry.Point2D
 import java.util.HashMap
-import java.lang.reflect.Array
 import javafx.collections.ObservableList
+import javafx.geometry.Point2D
 
 /** Request for refreshing the JavaFX screen.
  */
 event Ready
-
-event StartWalk
 
 event SpawnRequest {
 	var number : Integer

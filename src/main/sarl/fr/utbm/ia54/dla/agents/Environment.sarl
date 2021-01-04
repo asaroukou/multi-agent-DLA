@@ -9,19 +9,8 @@ import io.sarl.core.Lifecycle
 import io.sarl.core.Logging
 import io.sarl.core.Schedules
 import io.sarl.javafx.FXBehavior
-import fr.utbm.ia54.dla.ui.AskPercept
-import fr.utbm.ia54.dla.ui.EndWalk
-import fr.utbm.ia54.dla.ui.KillWalker
 import fr.utbm.ia54.dla.ui.SimulatorFxViewerController
 import fr.utbm.ia54.dla.ui.PointWalker2D
-import fr.utbm.ia54.dla.ui.Ready
-import fr.utbm.ia54.dla.ui.Refresh
-import fr.utbm.ia54.dla.ui.ReplyPercept
-import fr.utbm.ia54.dla.ui.RunSimulation
-import fr.utbm.ia54.dla.ui.SpawnRequest
-import fr.utbm.ia54.dla.ui.StopSimulation
-import fr.utbm.ia54.dla.ui.StopSimulationAck
-import fr.utbm.ia54.dla.ui.WalkerDie
 import java.util.HashMap
 import java.util.concurrent.atomic.AtomicInteger
 import javafx.geometry.Point2D
@@ -48,8 +37,7 @@ agent Environment {
 	on Initialize {
 		info("agent initialized")
 		fxcontroller = occurrence.parameters.get(0) as SimulatorFxViewerController
-		// The agent learns how to use the UI with a new behavior.
-		// This new behavior needs to have a reference to the JavaFX controller
+		// The agent learns how to use the UI, Perception and Configuration with a new behavior.
 		this.javafxBehavior = new FXBehavior(this, fxcontroller)
 		this.javafxBehavior.registerBehavior
 
@@ -60,29 +48,35 @@ agent Environment {
 		this.initConfBehavior.registerBehavior
 		// Query the UI to refresh itself
 		javafxBehavior.UISpace.emit(new Ready)
+		
+		//set initials metrics
 		stuckCount = new AtomicInteger(0)
 		activeCount = new AtomicInteger(0)
 	}
 	
 	
-		
+	
 	on RunSimulation {
 		this.envSize = occurrence.envSize as Integer
 		this.refreshRate = occurrence.refreshRate as Integer
 		this.walkingRate = occurrence.walkingRate as Integer
 		var initConf = occurrence.initConf as ObservableList<Integer>
-		info("envsize: "+ envSize)
-		info("conf " + initConf)
 		this.walkerState = newArrayOfSize(this.envSize, this.envSize)
 		for (x : 0 ..< envSize) {
 			for (y : 0 ..< envSize) {
 				this.walkerState.set(x, y, new AtomicInteger(0))
 			}
 		}
+		//Request a UI refresh every X milliseconds
 		task("refesh_ui").every(refreshRate) [
 			javafxBehavior.UISpace.emit(new Refresh)
 		]
-		info("start spawn")
+		//if no initial configuration for stuck cell, init in the center
+		if (initConf.isEmpty) {
+			var newAgentNbr = this.initConfBehavior.drawCenter(envSize, this.ID, refreshRate)
+			activeCount.addAndGet(newAgentNbr)
+		}
+		//for all configuration, init the right way the stuck cells
 		initConf.forEach[index|{
 			var newAgentNbr = 0
 			switch index {
@@ -108,6 +102,7 @@ agent Environment {
 		info("end spwan")
 	}
 	
+	//Spawn new walker on event occure
 	on SpawnRequest {
 		var number = occurrence.number as int
 		for (i : 0 ..< number) {
@@ -161,7 +156,9 @@ agent Environment {
 	
 	on StopSimulation {
 		emit(new KillWalker)
-		task("refesh_ui").cancel()
+		task("refesh_ui").cancel() //cancel UI refresh task
+		
+		// every 500ms, check if all Walker died. If so, we can dispose the environment
 		task("die").every(500) [
 			if (activeCount.get == 0) {
 				task("die").cancel()
@@ -169,7 +166,9 @@ agent Environment {
 			}
 		]
 	}
-
+	
+	
+	//actions after the environment has been destroyed
 	on Destroy {
 		javafxBehavior.UISpace.emit(new StopSimulationAck)
 		this.javafxBehavior.unregisterBehavior

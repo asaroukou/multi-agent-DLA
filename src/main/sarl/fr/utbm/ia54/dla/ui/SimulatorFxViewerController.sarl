@@ -24,16 +24,17 @@ import javafx.scene.control.ListView
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.SelectionMode
+import fr.utbm.ia54.dla.agents.StopSimulationAck
+import fr.utbm.ia54.dla.agents.Ready
+import fr.utbm.ia54.dla.agents.Refresh
+import fr.utbm.ia54.dla.agents.SpawnRequest
+import fr.utbm.ia54.dla.agents.RunSimulation
+import fr.utbm.ia54.dla.agents.StopSimulation
 
 /** JavaFX controller for the JavaFX application.
  */
-enum SimulationState {
-	IDDLE,
-	STARTED,
-	STOPED
-}
 
-enum SimulationInitConfiguration{
+enum SimulationInitConfiguration {
 	CENTER,
 	TOP,
 	BOTTOM,
@@ -44,10 +45,8 @@ enum SimulationInitConfiguration{
 	CIRCLE
 }
 
+@SuppressWarnings("raw_type")
 class SimulatorFxViewerController extends FxViewerController {
-
-	var simulationState : SimulationState
-
 	var dragX : int
 	var dragY : int
 
@@ -73,6 +72,8 @@ class SimulatorFxViewerController extends FxViewerController {
 
 	var launchedAgent : UUID
 
+
+	//FXML file declaration
 	@FXML public var mainPane : SplitPane
 	@FXML public var grid : GridPane
 	@FXML public var setupBox : VBox
@@ -93,7 +94,7 @@ class SimulatorFxViewerController extends FxViewerController {
 	@FXML public var runBtn : Button
 	@FXML public var stopBtn : Button
 	@FXML public var spawnBtn : Button
-	@FXML public var initConfListView: ListView
+	@FXML public var initConfListView : ListView
 	
 	@SuppressWarnings("unused_private_member")
 	@FXML

@@ -5,6 +5,9 @@ import io.sarl.lang.core.Agent
 import io.sarl.core.Lifecycle
 import java.util.UUID
 
+/**
+ * Direction Enum
+ */
 enum Direction {
 	UP,
 	DOWN,
@@ -15,7 +18,10 @@ enum Direction {
 	DOWN_LEFT,
 	DOWN_RIGHT
 }
-
+/*
+ * Behavior Move
+ * Used to compute the next Position based to the current one
+ */
 @SuppressWarnings("potential_field_synchronization_problem")
 behavior Move extends PerceptDirection {
 	var boundarie : int
@@ -44,18 +50,23 @@ behavior Move extends PerceptDirection {
 	}
 
 }
-
+/**
+ * Perception methods
+ * Used to compuse the direct position arround
+ */
 behavior PerceptDirection {
-
+	
 	def mapIntToDirection(i : int) : Direction {
 		return Direction.values().get(i)
 	}
-
+	
+	//return a random direction
 	def randomDirection() : Direction {
 		var rand = (Math.random() * (7 + 1)) as int;
 		return mapIntToDirection(rand)
 	}
 
+	//convert a direction to a unit 2D Point
 	def directionToPoint(direction : Direction) : Point2D {
 		var point : Point2D = new Point2D(0, 0)
 		switch direction {
@@ -70,7 +81,8 @@ behavior PerceptDirection {
 		}
 		return point
 	}
-
+	
+	//Return direct poision arrount
 	def perceptAround(position : Point2D) : Point2D[] {
 		var directions = Direction.values()
 		var positions : Point2D[] = newArrayOfSize(directions.length)
@@ -83,8 +95,14 @@ behavior PerceptDirection {
 	}
 }
 
+
+/**
+ * Behavior used to init the first stuck cell of the simulator
+ */
 behavior InitConfiguration {
 	uses Lifecycle
+	
+	//draw a circle inside of the environment grid
 	def drawCircle(size : int, parent : UUID, walkingRate: int) {
 		var startPoint = new Point2D(size / 2 as int, size / 2 as int)
 		var r = startPoint.distance(new Point2D(size / 2 as int, 4))
@@ -102,6 +120,7 @@ behavior InitConfiguration {
 		return activeCount
 	}
 
+	// init stuck cell from the top left of the environment to the bottom right
 	def drawTopLeftBottomRight(size : int, parent : UUID, walkingRate : int) {
 		var activeCount = 0
 		for (x : 0 ..< size) {
@@ -111,6 +130,7 @@ behavior InitConfiguration {
 		return activeCount
 	}
 
+	// init stuck cell from the top right of the environment to the bottom left
 	def drawTopRightBottomLeft(size : int, parent : UUID, walkingRate : int) {
 		var activeCount = 0
 		for (x : 0 ..< size) {
@@ -120,6 +140,7 @@ behavior InitConfiguration {
 		return activeCount
 	}
 
+	// init a stuck cell on the bottom side
 	def drawBottomSide(size : int, parent : UUID, walkingRate : int) {
 		var activeCount = 0
 		for (x : 0 ..< size) {
@@ -129,6 +150,7 @@ behavior InitConfiguration {
 		return activeCount
 	}
 
+	// init a stuck cell on the top side
 	def drawTopSide(size : int, parent : UUID, walkingRate : int) {
 		var activeCount = 0
 		for (x : 0 ..< size) {
@@ -138,6 +160,7 @@ behavior InitConfiguration {
 		return activeCount
 	}
 
+	// init a stuck cell on the left side
 	def drawLeftSide(size : int, parent : UUID, walkingRate : int) {
 		var activeCount = 0
 		for (x : 0 ..< size) {
@@ -146,7 +169,8 @@ behavior InitConfiguration {
 		}
 		return activeCount
 	}
-
+	
+	//init a stuck cell on the right side
 	def drawRightSide(size : int, parent : UUID, walkingRate : int) {
 		var activeCount = 0
 		for (x : 0 ..< size) {
@@ -155,7 +179,8 @@ behavior InitConfiguration {
 		}
 		return activeCount
 	}
-
+	
+	// init a stuck cell on the center
 	def drawCenter(size : int, parent : UUID, walkingRate : int) {
 		var startPoint = new Point2D(size / 2 as int, size / 2 as int)
 		spawn(Walker, startPoint, true, size, parent, walkingRate)

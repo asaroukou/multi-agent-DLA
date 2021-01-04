@@ -6,11 +6,6 @@ import io.sarl.core.Destroy
 import io.sarl.core.Initialize
 import io.sarl.core.Lifecycle
 import io.sarl.core.Schedules
-import fr.utbm.ia54.dla.ui.AskPercept
-import fr.utbm.ia54.dla.ui.EndWalk
-import fr.utbm.ia54.dla.ui.KillWalker
-import fr.utbm.ia54.dla.ui.ReplyPercept
-import fr.utbm.ia54.dla.ui.WalkerDie
 import java.util.HashMap
 import java.util.UUID
 import javafx.geometry.Point2D
@@ -25,7 +20,11 @@ agent Walker {
 	var area : Integer
 	var walkingRate : Integer
 	var moveBehavior : Move
-
+	
+	/*
+	 * Walk method
+	 * Compute new position from old one
+	 */
 	def walk(positionsAround : HashMap<Point2D, Integer>) {
 		var repulsion = new Point2D(0, 0)
 		for (entry : positionsAround.entrySet()) {
@@ -54,6 +53,8 @@ agent Walker {
 		this.stuck = isStuck as boolean
 		this.moveBehavior = new Move(this, this.area)
 		this.moveBehavior.registerBehavior
+		
+		//if no initial position, get a random one
 		if (initPosition === null) {
 			var x = (Math.random() * area) as int
 			var y = (Math.random() * area) as int
@@ -62,21 +63,21 @@ agent Walker {
 			this.position = initPosition
 		}
 		if (!isStuck) {
+			//if not stuck, ask for local data for further walk
 			emit(new AskPercept(this.position))[it.UUID == this.parentID]
 		} else {
+			//if dispose the agent who is no longer needed
 			emit(new EndWalk(position, position, stuck, true))[it.UUID == this.parentID]
 			killMe
 		}
 	}
 
 	on ReplyPercept {
-		occurrence.positions.forEach [ position, state |
-			{
+		occurrence.positions.forEach [ position, state |{
 				if (state === 2) {
 					this.stuck = true
 				}
-			}
-		]
+		}]
 		if (!this.stuck) {
 			in(walkingRate) [
 				this.walk(occurrence.positions)
